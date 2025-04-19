@@ -1,0 +1,5 @@
+FROM alpine:3.18
+
+RUN apk add --no-cache curl iputils-ping tcpdump bind-tools iperf3 nmap netcat-openbsd
+
+ENTRYPOINT ["tail", "-f", "/dev/null"]

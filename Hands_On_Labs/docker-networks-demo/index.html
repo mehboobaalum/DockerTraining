@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Docker Networking Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0066cc;
+        }
+        .info {
+            background-color: #e8f4ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        #container-info {
+            font-family: monospace;
+            white-space: pre;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Docker Networking Demo</h1>
+        <p>This container is running Nginx on Alpine Linux.</p>
+        
+        <div class="info">
+            <h2>Container Information:</h2>
+            <div id="container-info">Loading...</div>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            fetch('/env')
+                .then(response => response.text())
+                .then(data => {
+                    document.getElementById('container-info').textContent = data;
+                })
+                .catch(error => {
+                    document.getElementById('container-info').textContent = 'Error fetching container info: ' + error;
+                });
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+version: "3.8"
+services:
+  # Paperless-ngx Services
+  broker:
+    image: redis:7
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+    networks:
+      - paperless_network
+
+  db:
+    image: postgres:15
+    restart: unless-stopped
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-paperless}
+      POSTGRES_USER: ${POSTGRES_USER:-paperless}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-paperless}
+    networks:
+      - paperless_network
+
+  paperless-ngx:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+      - broker
+    ports:
+      - "8000:8000"
+    volumes:
+      - paperless_data:/usr/src/paperless/data
+      - paperless_media:/usr/src/paperless/media
+      - ../export:/usr/src/paperless/export
+      - ../consume:/usr/src/paperless/consume
+    environment:
+      PAPERLESS_REDIS: redis://broker:6379
+      PAPERLESS_DBHOST: db
+      PAPERLESS_DBUSER: ${POSTGRES_USER:-paperless}
+      PAPERLESS_DBPASS: ${POSTGRES_PASSWORD:-paperless}
+      PAPERLESS_DBNAME: ${POSTGRES_DB:-paperless}
+      PAPERLESS_URL: http://localhost:8000
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY:-paperless-secret-key}
+      PAPERLESS_TIME_ZONE: ${PAPERLESS_TIME_ZONE:-UTC}
+      PAPERLESS_OCR_LANGUAGE: ${PAPERLESS_OCR_LANGUAGE:-eng}
+      PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USER:-admin}
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD:-admin123}
+      PAPERLESS_OCR_MODE: ${PAPERLESS_OCR_MODE:-skip}
+    networks:
+      - paperless_network
+
+  # Your AI Application
+  paperless-ai:
+    build:
+      context: ..
+      dockerfile: docker-setup/services/paperless-ai.Dockerfile
+    image: paperless-ai:latest
+    platform: linux/arm64
+    container_name: paperless-ai
+    restart: unless-stopped
+    depends_on:
+      - paperless-ngx
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - PAPERLESS_AI_PORT=${PAPERLESS_AI_PORT:-3000}
+      - PAPERLESS_API_URL=http://paperless-ngx:8000/api
+      - PAPERLESS_API_TOKEN=e0806412e08d8ad4bad64f56f6b18ebfbc3ab0ee
+      - PAPERLESS_USERNAME=${PAPERLESS_USERNAME:-admin}
+      - AI_PROVIDER=${AI_PROVIDER:-custom}
+      - CUSTOM_API_KEY=${CUSTOM_API_KEY}
+      - CUSTOM_BASE_URL=https://api.groq.com/openai/v1
+      - CUSTOM_MODEL=${CUSTOM_MODEL:-meta-llama/llama-4-scout-17b-16e-instruct}
+      - SCAN_INTERVAL=${SCAN_INTERVAL:-*/30 * * * *}
+      - PROCESS_PREDEFINED_DOCUMENTS=${PROCESS_PREDEFINED_DOCUMENTS:-yes}
+      - ADD_AI_PROCESSED_TAG=${ADD_AI_PROCESSED_TAG:-no}
+      - AI_PROCESSED_TAG_NAME=${AI_PROCESSED_TAG_NAME:-ai-processed}
+      - ACTIVATE_TAGGING=${ACTIVATE_TAGGING:-yes}
+      - ACTIVATE_CORRESPONDENTS=${ACTIVATE_CORRESPONDENTS:-yes}
+      - ACTIVATE_DOCUMENT_TYPE=${ACTIVATE_DOCUMENT_TYPE:-yes}
+      - ACTIVATE_TITLE=${ACTIVATE_TITLE:-yes}
+      - ACTIVATE_CUSTOM_FIELDS=${ACTIVATE_CUSTOM_FIELDS:-yes}
+      - DISABLE_AUTOMATIC_PROCESSING=${DISABLE_AUTOMATIC_PROCESSING:-no}
+      - JWT_SECRET=${JWT_SECRET:-paperless_ai_secret_key_2024}
+    ports:
+      - "3000:3000"
+    volumes:
+      - paperless_ai_data:/app/data
+    networks:
+      - paperless_network
+
+networks:
+  paperless_network:
+    driver: bridge
+
+volumes:
+  paperless_data:
+  paperless_media:
+  dbdata:
+  redisdata:
+  paperless_ai_data: 

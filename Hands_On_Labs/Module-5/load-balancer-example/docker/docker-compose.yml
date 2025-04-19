@@ -1,0 +1,46 @@
+version: '3'
+services:
+  backend-1:
+    build: ../server   
+    container_name: backend-1
+    environment:
+      - PORT=5050 
+    networks:
+      - loadbalancing
+  backend-2:
+    build: ../server   
+    container_name: backend-2
+    environment:
+      - PORT=5050 
+    networks:
+      - loadbalancing
+  backend-3:
+    build: ../server  
+    container_name: backend-3
+    environment:
+      - PORT=5050 
+    networks:
+      - loadbalancing
+  backend-4:
+    build: ../server 
+    container_name: backend-4
+    environment:
+      - PORT=5050 
+    networks:
+      - loadbalancing
+
+  nginx:
+    build: ../nginx
+    container_name: nginx
+    ports:
+      - "80:80"
+    networks:
+      - loadbalancing
+    depends_on:
+      - backend-1
+      - backend-2
+      - backend-3
+      - backend-4
+
+networks:
+  loadbalancing:
